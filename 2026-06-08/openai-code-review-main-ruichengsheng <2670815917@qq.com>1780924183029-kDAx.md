@@ -1,0 +1,2 @@
+我先快速扫一下仓库里这些密钥名的上下文，确认影响面。**发现**
+- 高：`.github/workflows/main-maven-jar.yml:71` 和 `.github/workflows/main-maven-jar.yml:72` 把 GitHub Actions 读取的 secret 从 `CHATGLM_*` 直接切到 `CHATGPT_*`，但这里没有任何迁移兼容或非空校验。GitHub 在 secret 缺失时通常只会注入空字符串，不会在这一步显式报错；如果仓库/组织里的 secret 还没同步改名，后续流程会拿到空的 `CHATGPT_APIHOST` / `CHATGPT_APIKEYSECRET`，导致 AI 调用在运行期失效。这个改动依赖仓库外部配置同步完成，建议至少加显式校验，或在迁移期保留对旧 secret 名的兼容。
