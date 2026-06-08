@@ -1,0 +1,5 @@
+**评审结论**
+- 高：`.github/workflows/main-remote-jar.yml:30` 运行时下载并执行远端 JAR，同时在 `.github/workflows/main-remote-jar.yml:58` 传入 `CODE_TOKEN`、微信和 OpenAI 相关 secrets；这里没有任何 `SHA256`/签名校验，`main` 分支每次构建都把高权限凭据交给一个临时拉取的二进制，供应链风险很高。建议改为仓库内构建、固定可信 artifact，至少增加 digest 校验。
+- 中：`.github/workflows/main-remote-jar.yml:38` 用 `${GITHUB_REF#refs/heads/}` 取分支名，在 `pull_request` 事件下会得到 `refs/pull/<n>/merge`，不是实际源分支，导致 `COMMIT_BRANCH` 记录错误。建议按事件区分，优先使用 `${{ github.head_ref || github.ref_name }}`。
+- 中：`.github/workflows/main-remote-jar.yml:42` 和 `.github/workflows/main-remote-jar.yml:46` 在 `pull_request` 场景通常拿到的是 GitHub 生成的 merge commit 作者/标题，而不是真实 PR head commit；这会让审查通知中的作者和提交信息失真。建议 PR 事件直接读取 `github.event.pull_request.*`，或 checkout `github.event.pull_request.head.sha` 后再取 `git log`。
+- 中：`.github/workflows/main-remote-jar.yml:55` 在 `pull_request` 上直接依赖 secrets，来自 fork 的 PR 默认拿不到这些值，工作流会失败，容易把代码审查变成阻塞项。建议增加 fork 保护条件，或仅在 `push` / 内部 PR 上执行该步骤。
